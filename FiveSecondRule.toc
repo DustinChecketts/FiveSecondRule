@@ -1,0 +1,9 @@
+## Interface: 11200
+## Title: FiveSecondRule
+## Version: 1.0.0
+## Author: StormtrooperTK421
+## Notes: Five-second rule (FSR), mana tick (MP5), and mana gain tracking
+## SavedVariables:
+## SavedVariablesPerCharacter:
+
+FiveSecondRule.lua
