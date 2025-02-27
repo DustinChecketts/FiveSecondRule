@@ -10,7 +10,7 @@ This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "
 - Simple vertical line or "spark" that moves horizontally (left or right) across the mana bar
 - Displays the mana gained each tick to the right of the mana bar as "+50"
 - Simple, lightweight, elegant, and compatible with the default UI
-- Compatible with [TheLinuxITGuy](https://github.com/TheLinuxITGuy)'s [Turtle Dragonflight UI](https://github.com/TheLinuxITGuy/Turtle-Dragonflight)
+- Compatible with [TheLinuxITGuy](https://github.com/TheLinuxITGuy)'s beautiful [Turtle Dragonflight UI](https://github.com/TheLinuxITGuy/Turtle-Dragonflight)
 
 <h4>Acknowledgements</h4>
 
