@@ -19,7 +19,7 @@ This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "
 <h4>Known-Issues/ToDo</h4>
 
 - Thorough testing across all classes still needed.
-- Extend the addon to support Rage and Energy timings as well.
+- Extend the addon to support Rage and Energy timings.
 - If the map is resized, the "spark" and mana gain elements can appear atop the map strata.
 
 Updated, uploaded, and maintained by [StormtrooperTK421](https://discordapp.com/users/237746068844969994) on [GitHub](https://github.com/DustinChecketts/FiveSecondRule).
