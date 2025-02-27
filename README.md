@@ -12,5 +12,9 @@ Five-second rule (FSR), mana tick (MP5), and mana gain tracking for Turtle WoW (
 
 - Concept taken from [FiveSecondRule](https://github.com/smp4903/FiveSecondRule) by [smp4903](https://github.com/smp4903), but all code is my own
 
-*The "five-second-rule" refers to the necessary time to elapse after spending mana before mana regeneration will resume.
-**A "tick" is a measurement of time used for over time effects. Mana regeneration uses 2-second "ticks".
+<h4>Vocabulary</h4>
+
+- *The "five-second-rule" refers to the necessary time to elapse after spending mana before mana regeneration will resume.
+- **A "tick" is a measurement of time used for over time effects. Mana regeneration uses 2-second "ticks".
+
+<h4>Known-Issues/ToDo</h4>
