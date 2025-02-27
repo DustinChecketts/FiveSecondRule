@@ -19,5 +19,5 @@ Five-second rule (FSR), mana tick (MP5), and mana gain tracking for Turtle WoW (
 
 <h4>Known-Issues/ToDo</h4>
 
--Updated, uploaded, and maintained by [StormtrooperTK421](https://discordapp.com/users/237746068844969994) on [GitHub](https://github.com/DustinChecketts/FiveSecondRule).
+- Updated, uploaded, and maintained by [StormtrooperTK421](https://discordapp.com/users/237746068844969994) on [GitHub](https://github.com/DustinChecketts/FiveSecondRule).
 Please submit issues and I'll do my best to troubleshoot, replicate, and resolve issues as my limited abilities allow.
