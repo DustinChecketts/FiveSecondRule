@@ -9,7 +9,7 @@ This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "
 - Tracks mana "ticks"** as movement left-to-right
 - Simple vertical line or "spark" that moves horizontally (left or right) across the mana bar
 - Displays the mana gained each tick to the right of the mana bar as "+50"
-- Simple, lightweight, elegant
+- Simple, lightweight, elegant, and compatible with the default UI
 - Compatible with Turtle Dragonflight UI
 
 <h4>Acknowledgements</h4>
