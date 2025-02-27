@@ -16,11 +16,6 @@ This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "
 
 - Concept taken from [FiveSecondRule](https://github.com/smp4903/FiveSecondRule) by [smp4903](https://github.com/smp4903), but all code is my own
 
-<h4>Vocabulary</h4>
-
-- *The "five-second-rule" refers to the necessary time to elapse after spending mana before mana regeneration will resume.
-- **A "tick" is a measure of time used for over-time effects. Mana regeneration uses 2-second "ticks".
-
 <h4>Known-Issues/ToDo</h4>
 
 - Thorough testing across all classes still needed.
@@ -29,3 +24,8 @@ This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "
 
 Updated, uploaded, and maintained by [StormtrooperTK421](https://discordapp.com/users/237746068844969994) on [GitHub](https://github.com/DustinChecketts/FiveSecondRule).
 Please submit issues and I'll do my best to troubleshoot, replicate, and resolve issues as my limited abilities allow.
+
+<h4>Vocabulary</h4>
+
+- *The "five-second-rule" refers to the necessary time to elapse after spending mana before mana regeneration will resume.
+- **A "tick" is a measure of time used for over-time effects. Mana regeneration uses 2-second "ticks".
