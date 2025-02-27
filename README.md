@@ -1,5 +1,5 @@
 # FiveSecondRule
-A Turtle WoW addon that tracks the five-second rule (FSR or 5SR), mana ticks (MP5), and mana gains.
+A Turtle WoW addon that tracks the five-second rule (FSR or 5SR), mana ticks (MP5), and mana gains for mana-using classes.
 
 This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "five-second rule" countdown, "ticks", and mana gained (each tick). A small vertical line, or "spark", moves horizontally across the mana bar. When moving right-to-left, it is counting down the "five-second rule". When moving left-to-right, it times each "tick". As each "tick" expires, the amount of mana gained is calculated and displayed to the right of the mana bar and fades out quickly, similar to floating combat text.
 
