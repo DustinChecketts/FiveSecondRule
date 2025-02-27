@@ -25,6 +25,7 @@ This is a simple, lightweight, and elegant addon for TurtleWoW that tracks the "
 
 - Thorough testing across all classes still needed.
 - Extend the addon to support Rage and Energy timings as well.
+- If the map is resized, the "spark" and mana gain elements can appear atop the map strata.
 
 Updated, uploaded, and maintained by [StormtrooperTK421](https://discordapp.com/users/237746068844969994) on [GitHub](https://github.com/DustinChecketts/FiveSecondRule).
 Please submit issues and I'll do my best to troubleshoot, replicate, and resolve issues as my limited abilities allow.
