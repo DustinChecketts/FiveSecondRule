@@ -1,25 +1,38 @@
 -- FiveSecondRule
--- Five-second rule (FSR), mana tick (MP5), and mana gain tracking for TurtleWoW (1.12)
+-- Minimal addon for WoW 1.12 to track mana usage, mana regeneration, and mana ticks.
+-- Expected mana regen per tick is calculated dynamically based on class and spirit attribute.
+-- Formulas (from https://vanilla-wow-archive.fandom.com/wiki/Spirit):
+--   Priests and Mages:  13 + (spirit / 4)
+--   Warlocks:           8 + (spirit / 4)
+--   Druids, Shamans, Paladins, Hunters: 15 + (spirit / 5)
+--
+-- This version displays:
+--   - FSRSpark: A 5-second countdown spark shown when mana is consumed.
+--   - tickSpark: A left-to-right animation over 2 seconds that represents passive mana ticks.
+--       * tickSpark is hidden when FSRSpark is active.
+--       * tickSpark resets only when the observed mana gain is at least 90% of the expected value.
+--   - manaTickText: A text display showing every mana change.
+--       * Positive values (in light blue) are shown for regeneration.
+--       * Negative values (in deep purple) are shown when mana is consumed.
+--
+-- Chat logging is commented out for normal operation; uncomment for debugging if needed.
 
+-- Global addon table.
 FiveSecondRule = {
-    tickPreviousMana = UnitMana("player"),
-    frame = "FiveSecondRuleFrame",
-    lastManaUseTime = 0,
-    mp5Delay = 5, -- 5-second rule delay
-    previousMana = UnitMana("player"),
-    enabled = true,
-    manaTickTimer = 0,   -- Timer for displaying manaTickText
-    fadeTimer = 0,       -- Timer for fading the manaTickText
-    fadeStarted = false, -- Flag to indicate if fade has started
-    tickInterval = 2,    -- Assumed tick interval (in seconds)
-    tickStartTime = 0,   -- Time at which the most recent tick occurred
+    lastManaUseTime = 0,        -- Time when mana was last used (to start FSRSpark countdown)
+    mp5Delay = 5,               -- 5-second rule delay for FSRSpark
+    previousMana = UnitMana("player"),  -- Tracks the player's last known mana
+    lastTickTime = nil,         -- Time of the last mana tick (for elapsed time calc)
+    manaTickTimer = 0,          -- Timer for displaying manaTickText
+    fadeTimer = 0,              -- Timer for fading manaTickText
+    tickStartTime = nil,        -- Start time for tickSpark animation
 }
 
--- Create frame
 local FiveSecondRuleFrame = CreateFrame("Frame", "FiveSecondRuleFrame", UIParent)
 FiveSecondRuleFrame:SetFrameStrata("HIGH")
 
--- FSR Countdown Spark (moves right-to-left as a five-second countdown)
+-----------------------------------------------------------
+-- FSRSpark: The 5-second countdown spark
 local fsrSpark = FiveSecondRuleFrame:CreateTexture(nil, "OVERLAY")
 fsrSpark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 fsrSpark:SetBlendMode("ADD")
@@ -28,7 +41,8 @@ fsrSpark:SetHeight(32)
 fsrSpark:SetDrawLayer("OVERLAY", 7)
 fsrSpark:Hide()
 
--- Tick Spark (moves left-to-right over the tick interval)
+-----------------------------------------------------------
+-- tickSpark: The left-to-right animation for passive mana ticks (2 seconds duration)
 local tickSpark = FiveSecondRuleFrame:CreateTexture(nil, "OVERLAY")
 tickSpark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 tickSpark:SetBlendMode("ADD")
@@ -37,22 +51,45 @@ tickSpark:SetHeight(32)
 tickSpark:SetDrawLayer("OVERLAY", 8)
 tickSpark:Hide()
 
--- Mana Tick Text
+-----------------------------------------------------------
+-- manaTickText: Displays the mana change (positive for regen, negative for consumption)
 local manaTickText = FiveSecondRuleFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 manaTickText:SetPoint("LEFT", PlayerFrameManaBar, "RIGHT", 2, 0)
-manaTickText:SetTextColor(0.5, 0.65, 1) -- Light blue (for mana)
-manaTickText:SetFont("Fonts\\FRIZQT__.TTF", 11) -- FrizQT font (default)
+manaTickText:SetTextColor(0.5, 0.65, 1)
+manaTickText:SetFont("Fonts\\FRIZQT__.TTF", 11)
 manaTickText:Hide()
 
--- Function to update the FSR countdown spark (right-to-left)
+-----------------------------------------------------------
+-- CalculateExpectedRegen:
+-- Determines expected mana regeneration per tick based on player class and effective Spirit.
+function FiveSecondRule:CalculateExpectedRegen()
+    local _, effectiveSpirit = UnitStat("player", 5)
+    local _, playerClass = UnitClass("player")
+    local expected = 0
+
+    if playerClass == "PRIEST" or playerClass == "MAGE" then
+        expected = 13 + (effectiveSpirit / 4)
+    elseif playerClass == "WARLOCK" then
+        expected = 8 + (effectiveSpirit / 4)
+    elseif playerClass == "DRUID" or playerClass == "SHAMAN" or 
+           playerClass == "PALADIN" or playerClass == "HUNTER" then
+        expected = 15 + (effectiveSpirit / 5)
+    else
+        expected = 15 + (effectiveSpirit / 5)  -- fallback
+    end
+
+    return math.floor(expected + 0.5) -- round to nearest integer
+end
+
+-----------------------------------------------------------
+-- UpdateFSRSpark:
+-- Updates the FSRSpark position along the mana bar based on the 5-second countdown.
 function FiveSecondRule:UpdateFSRSpark()
     local now = GetTime()
     local barWidth = PlayerFrameManaBar:GetWidth() or 100
-    
-    if now < FiveSecondRule.lastManaUseTime + FiveSecondRule.mp5Delay then
-        local progress = (now - FiveSecondRule.lastManaUseTime) / FiveSecondRule.mp5Delay
+    if now < self.lastManaUseTime + self.mp5Delay then
+        local progress = (now - self.lastManaUseTime) / self.mp5Delay
         local pos = barWidth * (1 - progress)
-        
         fsrSpark:ClearAllPoints()
         fsrSpark:SetPoint("CENTER", PlayerFrameManaBar, "LEFT", pos, 0)
         fsrSpark:Show()
@@ -61,83 +98,40 @@ function FiveSecondRule:UpdateFSRSpark()
     end
 end
 
--- Function to update the tick spark (left-to-right) over the tick interval.
+-----------------------------------------------------------
+-- UpdateTickSpark:
+-- Animates tickSpark from left-to-right over 2 seconds, unless FSRSpark is active.
 function FiveSecondRule:UpdateTickSpark()
-    -- Only update if a tick has been recorded
-    if FiveSecondRule.tickStartTime > 0 then
-        local barWidth = PlayerFrameManaBar:GetWidth() or 100
-        local progress = (GetTime() - FiveSecondRule.tickStartTime) / FiveSecondRule.tickInterval
-        if progress < 1 then
+    if fsrSpark:IsShown() then
+        tickSpark:Hide()
+        return
+    end
+
+    if self.tickStartTime then
+        local now = GetTime()
+        local elapsed = now - self.tickStartTime
+        if elapsed <= 2 then
+            local barWidth = PlayerFrameManaBar:GetWidth() or 100
+            local progress = elapsed / 2  -- progress over 2 seconds (0 to 1)
+            local pos = barWidth * progress
             tickSpark:ClearAllPoints()
-            tickSpark:SetPoint("CENTER", PlayerFrameManaBar, "LEFT", barWidth * progress, 0)
+            tickSpark:SetPoint("CENTER", PlayerFrameManaBar, "LEFT", pos, 0)
             tickSpark:Show()
         else
             tickSpark:Hide()
+            -- Do not reset tickStartTime here to allow current animation to finish.
         end
+    else
+        tickSpark:Hide()
     end
 end
 
--- Event handler function
-function FiveSecondRule:OnEvent(event)
-    if event == "SPELLCAST_STOP" then
-        local currentMana = UnitMana("player")
-        if currentMana and FiveSecondRule.previousMana and currentMana < FiveSecondRule.previousMana then
-            FiveSecondRule.lastManaUseTime = GetTime()
-            fsrSpark:Show()  -- Force visibility of countdown spark
-            tickSpark:Show() -- Also show tick spark (it will be reset in DetectManaTicks)
-            -- Chat message commented out:
-            -- DEFAULT_CHAT_FRAME:AddMessage("Mana used, beginning countdown.")
-        end
-        FiveSecondRule.previousMana = currentMana or 0
-    end
-end
-
--- Polling check for mana consumption in case no event fires
-function FiveSecondRule:CheckMana()
-    local currentMana = UnitMana("player")
-    if currentMana and FiveSecondRule.previousMana and currentMana < FiveSecondRule.previousMana then
-        FiveSecondRule.lastManaUseTime = GetTime()
-        fsrSpark:Show()
-        tickSpark:Show()
-        -- DEFAULT_CHAT_FRAME:AddMessage("Mana used! Spark should begin.")
-    end
-    FiveSecondRule.previousMana = currentMana or 0
-end
-
--- Function to detect mana regeneration ticks.
--- When a tick is detected (i.e. currentMana > tickPreviousMana), we update
--- the mana tick text and record the tick start time for the tickSpark.
-function FiveSecondRule:DetectManaTicks()
-    local currentMana = UnitMana("player")
-    local maxMana = UnitManaMax("player")
-    
-    if currentMana >= maxMana then
-        return -- No need to track if resource is full
-    end
-    
-    if currentMana > FiveSecondRule.tickPreviousMana then
-        local manaGained = currentMana - FiveSecondRule.tickPreviousMana
-        -- Display the mana gain as a "+x" value
-        manaTickText:SetText("+" .. manaGained)
-        manaTickText:Show()
-        
-        -- Reset the fade timer for the text
-        FiveSecondRule.manaTickTimer = GetTime()
-        FiveSecondRule.fadeTimer = GetTime()
-        
-        -- Record tick start time for the tick spark
-        FiveSecondRule.tickStartTime = GetTime()
-        
-        -- DEFAULT_CHAT_FRAME:AddMessage("Mana tick generated " .. manaGained .. " mana.")
-    end
-    
-    FiveSecondRule.tickPreviousMana = currentMana
-end
-
--- Fade out the mana tick text gradually over 2 seconds
+-----------------------------------------------------------
+-- HideManaTickText:
+-- Gradually fades out manaTickText over 2 seconds.
 function FiveSecondRule:HideManaTickText()
-    if GetTime() - FiveSecondRule.manaTickTimer <= 2 then
-        local fadeProgress = (GetTime() - FiveSecondRule.fadeTimer) / 2
+    if GetTime() - self.manaTickTimer <= 2 then
+        local fadeProgress = (GetTime() - self.fadeTimer) / 2
         manaTickText:SetAlpha(1 - fadeProgress)
         if fadeProgress >= 1 then
             manaTickText:Hide()
@@ -145,24 +139,105 @@ function FiveSecondRule:HideManaTickText()
     end
 end
 
--- OnUpdate handler:
--- If the player's maximum power is 100 or less (i.e. non-mana resource), hide addon features.
-FiveSecondRuleFrame:SetScript("OnUpdate", function()
-    if UnitManaMax("player") <= 100 then
+-----------------------------------------------------------
+-- OnUpdate:
+-- Main update function which detects mana consumption and regeneration.
+function FiveSecondRule:OnUpdate()
+    -- Hide UI if mana is full or if max mana is very low.
+    if UnitManaMax("player") <= 100 or UnitMana("player") >= UnitManaMax("player") then
         fsrSpark:Hide()
         tickSpark:Hide()
         manaTickText:Hide()
         return
     end
-    FiveSecondRule:DetectManaTicks()
-    FiveSecondRule:UpdateFSRSpark()
-    FiveSecondRule:CheckMana()
-    FiveSecondRule:HideManaTickText()
-    FiveSecondRule:UpdateTickSpark() -- Update the tick spark's position
+
+    self:UpdateFSRSpark()
+
+    local currentMana = UnitMana("player")
+    local prevMana = self.previousMana
+
+    -- If mana is consumed (decrease)
+    if currentMana < prevMana then
+        self.lastManaUseTime = GetTime()
+        fsrSpark:Show()
+        tickSpark:Hide()  -- Ensure tickSpark is hidden when FSRSpark is active
+
+        local manaUsed = prevMana - currentMana
+        -- Set manaTickText to display consumed mana in deep purple (hex color 800080)
+        manaTickText:SetText("|cff800080-" .. manaUsed .. "|r")
+        manaTickText:SetAlpha(1)
+        manaTickText:Show()
+
+        -- Uncomment for debugging if needed:
+        -- DEFAULT_CHAT_FRAME:AddMessage("Mana used: -" .. manaUsed)
+
+        self.tickStartTime = nil  -- Reset tickSpark animation
+
+    -- If mana is regenerated (increase)
+    elseif currentMana > prevMana then
+        local observedGain = currentMana - prevMana
+        local expectedGain = self:CalculateExpectedRegen()
+        local now = GetTime()
+        local elapsed = self.lastTickTime and (now - self.lastTickTime) or 0
+        self.lastTickTime = now
+
+        -- Display observed gain as a positive number
+        manaTickText:SetText("+" .. observedGain)
+        manaTickText:SetAlpha(1)
+        manaTickText:Show()
+        self.manaTickTimer = now
+        self.fadeTimer = now
+
+        -- Uncomment for debugging if needed:
+        -- DEFAULT_CHAT_FRAME:AddMessage("Mana tick: +" .. observedGain .. " mana (expected: " .. expectedGain .. "). Elapsed: " .. string.format("%.2f", elapsed) .. " seconds.")
+
+        -- Only reset the tickSpark animation if the observed gain is at least 90% of the expected value.
+        if observedGain >= (0.9 * expectedGain) then
+            self.tickStartTime = now
+        end
+    end
+
+    -- Update previousMana at end of update cycle.
+    self.previousMana = currentMana
+    self:HideManaTickText()
+    
+    -- Update tickSpark animation (if applicable).
+    self:UpdateTickSpark()
+end
+
+-----------------------------------------------------------
+-- OnUpdate handler for the addon frame.
+FiveSecondRuleFrame:SetScript("OnUpdate", function()
+    FiveSecondRule:OnUpdate()
 end)
 
--- Register events
+-----------------------------------------------------------
+-- SPELLCAST_STOP event handler: Detects mana consumption when spells end.
 FiveSecondRuleFrame:RegisterEvent("SPELLCAST_STOP")
 FiveSecondRuleFrame:SetScript("OnEvent", function(self, event)
-    FiveSecondRule:OnEvent(event)
+    if event == "SPELLCAST_STOP" then
+        local currentMana = UnitMana("player")
+        if currentMana and currentMana < FiveSecondRule.previousMana then
+            FiveSecondRule.lastManaUseTime = GetTime()
+            fsrSpark:Show()
+            tickSpark:Hide()
+            local manaUsed = FiveSecondRule.previousMana - currentMana
+            manaTickText:SetText("|cff800080-" .. manaUsed .. "|r")
+            manaTickText:SetAlpha(1)
+            manaTickText:Show()
+            -- Uncomment for debugging if needed:
+            -- DEFAULT_CHAT_FRAME:AddMessage("Mana used (event): -" .. manaUsed)
+            FiveSecondRule.tickStartTime = nil
+        end
+        FiveSecondRule.previousMana = currentMana or 0
+    end
 end)
+
+-----------------------------------------------------------
+-- /stats command: Prints current Spirit stats for debugging.
+SLASH_STATS1 = "/stats"
+SlashCmdList["STATS"] = function(msg)
+    local base, effective, posBuff, negBuff = UnitStat("player", 5)
+    DEFAULT_CHAT_FRAME:AddMessage("Spirit - Base: " .. base .. ", Effective: " .. effective 
+        .. ", +Buff: " .. posBuff .. ", -Buff: " .. negBuff)
+end
