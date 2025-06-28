@@ -4,6 +4,9 @@
 ## Author: StormtrooperTK421
 ## Notes: Five-second rule (FSR), mana tick (MP5), and mana gain tracking
 ## SavedVariables:
-## SavedVariablesPerCharacter:
+## SavedVariablesPerCharacter: FiveSecondRule_Settings
 
+FiveSecondRule_Utils.lua
+FiveSecondRule_Settings.lua
 FiveSecondRule.lua
+FiveSecondRule_Cmd.lua

@@ -55,7 +55,6 @@ tickSpark:Hide()
 -- manaTickText: Displays the mana change (positive for regen, negative for consumption)
 local manaTickText = FiveSecondRuleFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 manaTickText:SetPoint("LEFT", PlayerFrameManaBar, "RIGHT", 2, 0)
-manaTickText:SetTextColor(0.5, 0.65, 1)
 manaTickText:SetFont("Fonts\\FRIZQT__.TTF", 11)
 manaTickText:Hide()
 
@@ -164,7 +163,7 @@ function FiveSecondRule:OnUpdate()
 
         local manaUsed = prevMana - currentMana
         -- Set manaTickText to display consumed mana in deep purple (hex color 800080)
-        manaTickText:SetText("|cff800080-" .. manaUsed .. "|r")
+        manaTickText:SetText(self:ManaLossText(manaUsed))
         manaTickText:SetAlpha(1)
         manaTickText:Show()
 
@@ -182,7 +181,7 @@ function FiveSecondRule:OnUpdate()
         self.lastTickTime = now
 
         -- Display observed gain as a positive number
-        manaTickText:SetText("+" .. observedGain)
+        manaTickText:SetText(self:ManaGainText(observedGain))
         manaTickText:SetAlpha(1)
         manaTickText:Show()
         self.manaTickTimer = now
@@ -200,9 +199,36 @@ function FiveSecondRule:OnUpdate()
     -- Update previousMana at end of update cycle.
     self.previousMana = currentMana
     self:HideManaTickText()
-    
+
     -- Update tickSpark animation (if applicable).
     self:UpdateTickSpark()
+end
+
+function FiveSecondRule:OnEvent(event)
+    if event == "SPELLCAST_STOP" then
+        local currentMana = UnitMana("player")
+        if currentMana and currentMana < FiveSecondRule.previousMana then
+            FiveSecondRule.lastManaUseTime = GetTime()
+            fsrSpark:Show()
+            tickSpark:Hide()
+            local manaUsed = FiveSecondRule.previousMana - currentMana
+            manaTickText:SetText(self:ManaLossText(manaUsed))
+            manaTickText:SetAlpha(1)
+            manaTickText:Show()
+            -- Uncomment for debugging if needed:
+            -- DEFAULT_CHAT_FRAME:AddMessage("Mana used (event): -" .. manaUsed)
+            FiveSecondRule.tickStartTime = nil
+        end
+        FiveSecondRule.previousMana = currentMana or 0
+    end
+end
+
+function FiveSecondRule:ManaLossText(msg)
+    return "|cff" .. FiveSecondRule_Settings.manaLossColor .. "-" .. msg .. "|r"
+end
+
+function FiveSecondRule:ManaGainText(msg)
+    return "|cff" .. FiveSecondRule_Settings.manaGainColor .. "+" .. msg .. "|r"
 end
 
 -----------------------------------------------------------
@@ -215,29 +241,5 @@ end)
 -- SPELLCAST_STOP event handler: Detects mana consumption when spells end.
 FiveSecondRuleFrame:RegisterEvent("SPELLCAST_STOP")
 FiveSecondRuleFrame:SetScript("OnEvent", function(self, event)
-    if event == "SPELLCAST_STOP" then
-        local currentMana = UnitMana("player")
-        if currentMana and currentMana < FiveSecondRule.previousMana then
-            FiveSecondRule.lastManaUseTime = GetTime()
-            fsrSpark:Show()
-            tickSpark:Hide()
-            local manaUsed = FiveSecondRule.previousMana - currentMana
-            manaTickText:SetText("|cff800080-" .. manaUsed .. "|r")
-            manaTickText:SetAlpha(1)
-            manaTickText:Show()
-            -- Uncomment for debugging if needed:
-            -- DEFAULT_CHAT_FRAME:AddMessage("Mana used (event): -" .. manaUsed)
-            FiveSecondRule.tickStartTime = nil
-        end
-        FiveSecondRule.previousMana = currentMana or 0
-    end
+    FiveSecondRule:OnEvent(event)
 end)
-
------------------------------------------------------------
--- /stats command: Prints current Spirit stats for debugging.
-SLASH_STATS1 = "/stats"
-SlashCmdList["STATS"] = function(msg)
-    local base, effective, posBuff, negBuff = UnitStat("player", 5)
-    DEFAULT_CHAT_FRAME:AddMessage("Spirit - Base: " .. base .. ", Effective: " .. effective 
-        .. ", +Buff: " .. posBuff .. ", -Buff: " .. negBuff)
-end
