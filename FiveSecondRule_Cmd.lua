@@ -19,6 +19,8 @@ function FiveSecondRule_Cmd:Handle(msg)
             self:HandleColorCmd(args)
         elseif arg == "reset" then
             self:ResetSettings()
+        elseif arg == "text" then
+            self:HandleTextCmd(args)
         else
             self:PrintHelp("fsr")
         end
@@ -50,6 +52,15 @@ function FiveSecondRule_Cmd:HandleColorCmd(args)
     end
 end
 
+function FiveSecondRule_Cmd:HandleTextCmd(args)
+    local arg = self:NextArg(args)
+    if arg and (arg == "on" or arg == "off") then
+        self:ChangeSettings("showText", arg == "on")
+    else
+        self:PrintHelp("text")
+    end
+end
+
 function FiveSecondRule_Cmd:SplitByWhitespace(str)
     local words = {}
     for word in string.gfind(str, "%S+") do
@@ -73,7 +84,11 @@ function FiveSecondRule_Cmd:IsValidHexColor(color)
 end
 
 function FiveSecondRule_Cmd:ChangeSettings(name, value)
-    DEFAULT_CHAT_FRAME:AddMessage(FiveSecondRule_AddonName .. ": Changed '" .. name .. "' from " .. FiveSecondRule_Settings[name] .. " to " .. value)
+    if type(value) == "string" then
+        DEFAULT_CHAT_FRAME:AddMessage(FiveSecondRule_AddonName .. ": Changed '" .. name .. "' from " .. FiveSecondRule_Settings[name] .. " to " .. value)
+    elseif type(value) == "boolean" then
+        DEFAULT_CHAT_FRAME:AddMessage(FiveSecondRule_AddonName .. ": '" .. name .. "' " .. (value and "enabled" or "disabled")) -- simulating ternary operator
+    end
     FiveSecondRule_Settings[name] = value
 end
 
@@ -88,12 +103,14 @@ function FiveSecondRule_Cmd:PrintHelp(topic)
         DEFAULT_CHAT_FRAME:AddMessage("Available commands:")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr stats -- print character spirit info")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr color <manaloss|managain> |cffdd2222RR|r|cff22dd22GG|r|cff2222ddBB|r -- change mana loss/gain text color (color in hex format)")
+        DEFAULT_CHAT_FRAME:AddMessage("    /fsr text <on|off> -- enable/disable mana change text")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr reset -- reset to default settings")
     elseif topic == "fsr" then
         DEFAULT_CHAT_FRAME:AddMessage(FiveSecondRule_AddonName .. ": |cffdd2222Invalid command.")
         DEFAULT_CHAT_FRAME:AddMessage("Correct syntax:")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr stats -- print character spirit info")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr color <manaloss|managain> |cffdd2222RR|r|cff22dd22GG|r|cff2222ddBB|r -- change mana loss/gain text color (color in hex format)")
+        DEFAULT_CHAT_FRAME:AddMessage("    /fsr text <on|off> -- enable/disable mana change text")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr reset -- reset to default settings")
     elseif topic == "color" then
         DEFAULT_CHAT_FRAME:AddMessage(FiveSecondRule_AddonName .. ": |cffdd2222Invalid command.")
@@ -104,5 +121,9 @@ function FiveSecondRule_Cmd:PrintHelp(topic)
         DEFAULT_CHAT_FRAME:AddMessage("Invalid color hex format or color not specified.")
         DEFAULT_CHAT_FRAME:AddMessage("Correct syntax:")
         DEFAULT_CHAT_FRAME:AddMessage("    /fsr color <manaloss|managain> |cffdd2222RR|r|cff22dd22GG|r|cff2222ddBB|r")
+    elseif topic == "text" then
+        DEFAULT_CHAT_FRAME:AddMessage(FiveSecondRule_AddonName .. ": |cffdd2222Invalid command.")
+        DEFAULT_CHAT_FRAME:AddMessage("Correct syntax:")
+        DEFAULT_CHAT_FRAME:AddMessage("    /fsr text <on|off>")
     end
 end

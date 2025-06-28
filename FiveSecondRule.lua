@@ -165,7 +165,7 @@ function FiveSecondRule:OnUpdate()
         -- Set manaTickText to display consumed mana in deep purple (hex color 800080)
         manaTickText:SetText(self:ManaLossText(manaUsed))
         manaTickText:SetAlpha(1)
-        manaTickText:Show()
+        if FiveSecondRule_Settings.showText then manaTickText:Show() end
 
         -- Uncomment for debugging if needed:
         -- DEFAULT_CHAT_FRAME:AddMessage("Mana used: -" .. manaUsed)
@@ -183,7 +183,7 @@ function FiveSecondRule:OnUpdate()
         -- Display observed gain as a positive number
         manaTickText:SetText(self:ManaGainText(observedGain))
         manaTickText:SetAlpha(1)
-        manaTickText:Show()
+        if FiveSecondRule_Settings.showText then manaTickText:Show() end
         self.manaTickTimer = now
         self.fadeTimer = now
 
@@ -214,7 +214,7 @@ function FiveSecondRule:OnEvent(event)
             local manaUsed = FiveSecondRule.previousMana - currentMana
             manaTickText:SetText(self:ManaLossText(manaUsed))
             manaTickText:SetAlpha(1)
-            manaTickText:Show()
+            if FiveSecondRule_Settings.showText then manaTickText:Show() end
             -- Uncomment for debugging if needed:
             -- DEFAULT_CHAT_FRAME:AddMessage("Mana used (event): -" .. manaUsed)
             FiveSecondRule.tickStartTime = nil
